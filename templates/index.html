@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Animal Selector & File Upload</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px;
+      gap: 40px;
+    }
+
+    .box {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      width: 300px;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .checkbox-group label {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .animal-image {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .animal-image img {
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .file-info {
+      margin-top: 20px;
+      font-size: 14px;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Animal Selection -->
+  <div class="box">
+    <h3>Select an Animal</h3>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="cat"> Cat</label>
+      <label><input type="checkbox" id="dog"> Dog</label>
+      <label><input type="checkbox" id="elephant"> Elephant</label>
+    </div>
+    <div class="animal-image" id="animalImageBox">
+      <img id="animalImage" src="" alt="">
+    </div>
+  </div>
+
+  <!-- File Upload -->
+  <div class="box">
+    <h3>Upload a File</h3>
+    <form id="uploadForm">
+      <input type="file" id="fileInput" name="file">
+      <button type="submit">Upload</button>
+    </form>
+    <div class="file-info" id="fileInfo">
+      <p><strong>Name:</strong> <span id="fileName"></span></p>
+      <p><strong>Size:</strong> <span id="fileSize"></span></p>
+      <p><strong>Type:</strong> <span id="fileType"></span></p>
+    </div>
+  </div>
+
+  <script>
+    // Animal image logic
+    const checkboxes = {
+      cat: document.getElementById('cat'),
+      dog: document.getElementById('dog'),
+      elephant: document.getElementById('elephant')
+    };
+
+    const imageBox = document.getElementById('animalImageBox');
+    const image = document.getElementById('animalImage');
+
+    function updateImage() {
+      if (checkboxes.cat.checked) {
+        image.src = '/static/cat.jpg';
+        image.alt = 'Cat';
+        imageBox.style.display = 'block';
+      } else if (checkboxes.dog.checked) {
+        image.src = '/static/dog.jpg';
+        image.alt = 'Dog';
+        imageBox.style.display = 'block';
+      } else if (checkboxes.elephant.checked) {
+        image.src = '/static/elephant.jpg';
+        image.alt = 'Elephant';
+        imageBox.style.display = 'block';
+      } else {
+        imageBox.style.display = 'none';
+      }
+
+      // Optional: make only one selectable
+      Object.keys(checkboxes).forEach(animal => {
+        if (image.alt.toLowerCase() !== animal) {
+          checkboxes[animal].checked = false;
+        }
+      });
+    }
+
+    Object.values(checkboxes).forEach(cb => {
+      cb.addEventListener('change', updateImage);
+    });
+
+    // File upload logic with Flask API
+    const form = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfoBox = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const fileType = document.getElementById('fileType');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+
+        fileName.textContent = data.name;
+        fileSize.textContent = formatBytes(data.size);
+        fileType.textContent = data.type;
+        fileInfoBox.style.display = 'block';
+      })
+      .catch(err => {
+        alert('Upload failed');
+        console.error(err);
+      });
+    });
+
+    function formatBytes(bytes) {
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let i = 0;
+      while (bytes >= 1024 && i < units.length - 1) {
+        bytes /= 1024;
+        i++;
+      }
+      return `${bytes.toFixed(2)} ${units[i]}`;
+    }
+  </script>
+</body>
+</html>
